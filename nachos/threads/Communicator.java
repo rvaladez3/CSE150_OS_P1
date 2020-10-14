@@ -1,4 +1,4 @@
-package nachos.threads;
+ackage nachos.threads;
 
 import nachos.machine.*;
 

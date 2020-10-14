@@ -274,10 +274,39 @@ public class KThread {
      */
     public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
+	Lib.assertTrue(Machine.interrupt().disabled());
 
-	Lib.assertTrue(this != currentThread); //checks to see if the thread is trying to join itself
+	Lib.assertTrue(this != currentThread);//checks to see if the thread is trying to join itself
+	Machine.interrupt().disabled();
+	boolean interrupt = false;
 	
-	/* 
+	if(currentThread.status == 2) {
+		readyQueue.waitForAccess(this);//make the idleThread wait for access
+		this.sleep(); //While it waits for access, we put it to sleep
+		while(!interrupt) {
+			currentThread.runThread();
+			if(currentThread.status == 4) { //when currentThread.status = 4. enable the interrupt
+				interrupt = true;
+			}
+		}
+		this.runThread();
+		currentThread.runNextThread();
+	}
+	
+	
+	Machine.interrupt().enabled();
+	
+	/* A boolean variable is created so we can keep track of whether or not
+	 * we need to make an interrupt
+	 * 
+	 * we check to see if the currentThread is running(4) and if it is
+	 * then we jump to the finish() function
+	 * 
+	 * If the status is = 2, then we make the idleThread wait for access and 
+	 * put the thread to sleep. We also make change the status from true
+	 * to false and jump into a while loop which will exit out 
+	 * once the currentThread has finished and changed its status to 4 
+	 * 
 	 * 
 	 * 
 	 */
