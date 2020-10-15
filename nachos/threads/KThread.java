@@ -277,24 +277,24 @@ public class KThread {
 	Lib.assertTrue(Machine.interrupt().disabled());
 
 	Lib.assertTrue(this != currentThread);//checks to see if the thread is trying to join itself
-	Machine.interrupt().disabled();
+	Machine.interrupt().disable();
 	boolean interrupt = false;
 	
-	if(currentThread.status == 2) {
-		readyQueue.waitForAccess(this);//make the idleThread wait for access
-		this.sleep(); //While it waits for access, we put it to sleep
+	if(this.status == 2) {
+		readyQueue.waitForAccess(currentThread);//make the idleThread wait for access
+		currentThread.sleep(); //While it waits for access, we put it to sleep
 		while(!interrupt) {
-			currentThread.runThread();
-			if(currentThread.status == 4) { //when currentThread.status = 4. enable the interrupt
+			this.runThread();
+			if(this.status == 4) { //when currentThread.status = 4. enable the interrupt
 				interrupt = true;
 			}
 		}
-		this.runThread();
-		currentThread.runNextThread();
+		currentThread.runThread();
+		this.runNextThread();
 	}
 	
 	
-	Machine.interrupt().enabled();
+	Machine.interrupt().enable();
 	
 	/* A boolean variable is created so we can keep track of whether or not
 	 * we need to make an interrupt
