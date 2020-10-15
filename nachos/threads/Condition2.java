@@ -60,8 +60,9 @@ public class Condition2 {
 	KThread thread = KThread.currentThread();
 	
 	if(!waitQueue.isEmpty()) {
-		waitQueue.pop();
 		thread = waitQueue.getFirst();
+		waitQueue.pop();
+		
 	}
 	Machine.interrupt().enable();
 	
