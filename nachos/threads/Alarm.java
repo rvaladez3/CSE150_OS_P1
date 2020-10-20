@@ -2,6 +2,8 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.Map.Entry;
+import java.util.TreeMap;
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
  * until a certain time.
@@ -18,6 +20,8 @@ public class Alarm {
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
 	    });
+	
+	this.waitQ = new TreeMap<Long, KThread>();
     }
 
     /**
@@ -27,11 +31,18 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
-	
+	boolean interrupt = Machine.interrupt().disabled();
+	if(waitQ.size()>=1) {
+		for (Entry<Long, KThread> it : waitQ.entrySet()) {
+			if(it.getKey() <= Machine.timer().getTime()) {
+				it.getValue().ready();
+				waitQ.remove(it.getKey());
+			}
+		}
+	}
+	KThread.yield();
+	Machine.interrupt().restore(interrupt);
     }
-    
-   public long TreeTime() 
 
     /**
      * Put the current thread to sleep for at least <i>x</i> ticks,
@@ -49,11 +60,14 @@ public class Alarm {
      */
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
-	if(x <= 0) {
+	long wakeTime = Machine.timer().getTime() + x;
+	
+	if( x<= 0) {
 		return;
 	}
-	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+	waitQ.put(wakeTime,KThread.currentThread());
+	KThread.sleep();
     }
+
+	private TreeMap<Long,KThread> waitQ = null;
 }
