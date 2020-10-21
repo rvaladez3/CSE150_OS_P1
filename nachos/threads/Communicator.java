@@ -22,7 +22,11 @@ public class Communicator {
     	//0 is considered not null
     	//1 is considered null;
     }
-
+    
+    private static Integer sound;
+    Lock lock;
+    Condition2 speakers;
+    Condition2 listeners;
     /**
      * Wait for a thread to listen through this communicator, and then transfer
      * <i>word</i> to the listener.
@@ -53,7 +57,16 @@ public class Communicator {
      * @return	the integer transferred.
      */    
     public int listen() {
+    	Lock.acquire();
+    	while(s == 1) {
+    		listeners.sleep();
+    	}
+    	s = 1;
+    	speakers.wakeALL();
+    	
+    	Lock.release();
     	
 	return 0;
     }
 }
+
