@@ -282,7 +282,7 @@ public class KThread {
 	
 	if(this.status == 2) {
 		readyQueue.waitForAccess(currentThread);//make the idleThread wait for access
-		currentThread.sleep(); //While it waits for access, we put it to sleep
+		KThread.sleep(); //While it waits for access, we put it to sleep
 		while(!interrupt) {
 			this.runThread();
 			if(this.status == 4) { //when currentThread.status = 4. enable the interrupt
@@ -290,7 +290,7 @@ public class KThread {
 			}
 		}
 		currentThread.runThread();
-		this.runNextThread();
+		KThread.runNextThread();
 	}
 	
 	
@@ -310,6 +310,7 @@ public class KThread {
 	 * 
 	 * 
 	 */
+	Lib.assertTrue(this != currentThread);
 
     }
 
@@ -461,6 +462,7 @@ public class KThread {
      * ready (on the ready queue but not running), running, or blocked (not
      * on the ready queue and not running).
      */
+    public long wait = 0;
     private int status = statusNew;
     private String name = "(unnamed thread)";
     private Runnable target;
