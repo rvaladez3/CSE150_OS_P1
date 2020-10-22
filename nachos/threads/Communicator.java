@@ -23,7 +23,7 @@ public class Communicator {
     	//1 is considered null;
     }
     
-    private static Integer sound;
+    private static Integer s;
     Lock lock;
     Condition2 speakers;
     Condition2 listeners;
@@ -38,15 +38,15 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
-    	Lock.acquire();
+    	Lock.acquire();		//Acquire lock
     	
-    	while(s != null) {
+    	while(s != null) {		//While there is a thread speaking, sleep speakers
     		speakers.sleep();
     	}
-    	s = word;
-    	listeners.wake();
+    	s = word;				//The thread speaks and stores word into s
+    	listeners.wake();		//Listener thread wakes
     	
-    	Lock.release();
+    	Lock.release();		//Release lock
     }
 
     /**
@@ -56,16 +56,16 @@ public class Communicator {
      * @return	the integer transferred.
      */    
     public int listen() {
-    	int threadReturn;
-    	Lock.acquire();
-    	while(s == null) {
+    	int threadReturn;		//variable to store and save the s value
+    	Lock.acquire();			//Acquire lock
+    	while(s == null) {		//While there is no thread speaking, sleep listeners
     		listeners.sleep();	
     	}
-    	threadReturn = sound.intValue();
+    	threadReturn = s.intValue();		//stores word into threadReturn
     	s = null;
     	speakers.wakeALL();		//Wake up all speakers waiting
     	
-    	Lock.release();
+    	Lock.release();			//Release lock
     	
 	return threadReturn;
     }
