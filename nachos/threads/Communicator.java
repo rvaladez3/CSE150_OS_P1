@@ -18,7 +18,7 @@ public class Communicator {
     	Lock = new Lock();
     	speakers = new Condition2(Lock);
     	listeners = new Condition2(Lock);
-    	int s = 1;
+    	s = null;
     	//0 is considered not null
     	//1 is considered null;
     }
@@ -40,12 +40,11 @@ public class Communicator {
     public void speak(int word) {
     	Lock.acquire();
     	
-    	while(s == 0) {
+    	while(s != null) {
     		speakers.sleep();
     	}
     	s = word;
     	listeners.wake();
-    	s = 1;
     	
     	Lock.release();
     }
@@ -57,16 +56,18 @@ public class Communicator {
      * @return	the integer transferred.
      */    
     public int listen() {
+    	int threadReturn;
     	Lock.acquire();
-    	while(s == 1) {
-    		listeners.sleep();
+    	while(s == null) {
+    		listeners.sleep();	
     	}
-    	s = 1;
-    	speakers.wakeALL();
+    	threadReturn = sound.intValue();
+    	s = null;
+    	speakers.wakeALL();		//Wake up all speakers waiting
     	
     	Lock.release();
     	
-	return 0;
+	return threadReturn;
     }
 }
 
