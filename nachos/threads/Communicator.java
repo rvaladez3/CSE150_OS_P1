@@ -15,9 +15,9 @@ public class Communicator {
      * Allocate a new communicator.
      */
     public Communicator() {
-    	Lock = new Lock();
-    	speakers = new Condition2(Lock);
-    	listeners = new Condition2(Lock);
+    	lock = new Lock();
+    	speakers = new Condition2(lock);
+    	listeners = new Condition2(lock);
     	s = null;
     	//0 is considered not null
     	//1 is considered null;
