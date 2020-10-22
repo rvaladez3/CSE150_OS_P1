@@ -1,4 +1,3 @@
-  
 package nachos.threads;
 
 import nachos.machine.*;
@@ -46,6 +45,7 @@ public class Communicator {
     	}
     	s = word;				//The thread speaks and stores word into s
     	listeners.wake();		//Listener thread wakes
+    	speakers.sleep();
     	
     	lock.release();		//Release lock
     }
