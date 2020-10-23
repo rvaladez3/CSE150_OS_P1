@@ -1,5 +1,7 @@
 package nachos.threads;
 
+import java.util.LinkedList;
+
 import nachos.machine.*;
 
 /**
@@ -186,11 +188,13 @@ public class KThread {
 	
 	Machine.interrupt().disable();
 
+	bock.acquire();
+	waitQueue.wakeAll();
+	bock.release();
 	Machine.autoGrader().finishingCurrentThread();
 
 	Lib.assertTrue(toBeDestroyed == null);
 	toBeDestroyed = currentThread;
-
 
 	currentThread.status = statusFinished;
 	
@@ -274,27 +278,17 @@ public class KThread {
      */
     public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
-	Lib.assertTrue(Machine.interrupt().disabled());
-
 	Lib.assertTrue(this != currentThread);//checks to see if the thread is trying to join itself
-	Machine.interrupt().disable();
-	boolean interrupt = false;
 	
-	if(this.status == 2) {
-		readyQueue.waitForAccess(currentThread);//make the idleThread wait for access
-		currentThread.sleep(); //While it waits for access, we put it to sleep
-		while(!interrupt) {
-			this.runThread();
-			if(this.status == 4) { //when currentThread.status = 4. enable the interrupt
-				interrupt = true;
-			}
-		}
-		currentThread.runThread();
-		this.runNextThread();
+	if(this != currentThread && this.status != statusFinished) {
+	bock.acquire();
+	waitQueue.sleep();
+	bock.release();
 	}
+
+
 	
 	
-	Machine.interrupt().enable();
 	
 	/* A boolean variable is created so we can keep track of whether or not
 	 * we need to make an interrupt
@@ -310,7 +304,6 @@ public class KThread {
 	 * 
 	 * 
 	 */
-
     }
 
     /**
@@ -461,6 +454,7 @@ public class KThread {
      * ready (on the ready queue but not running), running, or blocked (not
      * on the ready queue and not running).
      */
+    public long wait = 0;
     private int status = statusNew;
     private String name = "(unnamed thread)";
     private Runnable target;
@@ -478,4 +472,6 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+    private static Lock bock= new Lock();
+    private static Condition waitQueue = new Condition(bock);
 }
