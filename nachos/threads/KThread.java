@@ -1,5 +1,7 @@
 package nachos.threads;
 
+import java.util.LinkedList;
+
 import nachos.machine.*;
 
 /**
@@ -27,7 +29,7 @@ import nachos.machine.*;
  * new KThread(p).fork();
  * </pre></blockquote>
  */
-public class KThread {
+public class KThread implements Comparable{
     /**
      * Get the current thread.
      *
@@ -186,11 +188,13 @@ public class KThread {
 	
 	Machine.interrupt().disable();
 
+	bock.acquire();
+	waitQueue.wakeAll();
+	bock.release();
 	Machine.autoGrader().finishingCurrentThread();
 
 	Lib.assertTrue(toBeDestroyed == null);
 	toBeDestroyed = currentThread;
-
 
 	currentThread.status = statusFinished;
 	
@@ -274,14 +278,32 @@ public class KThread {
      */
     public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
-
-	Lib.assertTrue(this != currentThread); //checks to see if the thread is trying to join itself
+	Lib.assertTrue(this != currentThread);//checks to see if the thread is trying to join itself
 	
-	/* 
+	if(this != currentThread && this.status != statusFinished) {
+	bock.acquire();
+	waitQueue.sleep();
+	bock.release();
+	}
+
+
+	
+	
+	
+	/* A boolean variable is created so we can keep track of whether or not
+	 * we need to make an interrupt
+	 * 
+	 * we check to see if the currentThread is running(4) and if it is
+	 * then we jump to the finish() function
+	 * 
+	 * If the status is = 2, then we make the idleThread wait for access and 
+	 * put the thread to sleep. We also make change the status from true
+	 * to false and jump into a while loop which will exit out 
+	 * once the currentThread has finished and changed its status to 4 
+	 * 
 	 * 
 	 * 
 	 */
-
     }
 
     /**
@@ -432,6 +454,7 @@ public class KThread {
      * ready (on the ready queue but not running), running, or blocked (not
      * on the ready queue and not running).
      */
+    public long wait = 0;
     private int status = statusNew;
     private String name = "(unnamed thread)";
     private Runnable target;
@@ -449,4 +472,7 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+    private static Lock bock= new Lock();
+    private static Condition waitQueue = new Condition(bock);
+
 }
