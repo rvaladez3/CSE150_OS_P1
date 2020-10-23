@@ -20,7 +20,7 @@ public class Alarm {
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
 	    });
-	
+	this.waitLock = new Lock();
 	this.waitQ = new TreeMap<Long, KThread>();
     }
 
@@ -31,15 +31,18 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
+    long time = Machine.timer().getTime();
 	boolean interrupt = Machine.interrupt().disabled();
-	if(waitQ.size()>=1) {
-		for (Entry<Long, KThread> it : waitQ.entrySet()) {
-			if(it.getKey() <= Machine.timer().getTime()) {
-				it.getValue().ready();
-				waitQ.remove(it.getKey());
+	if(this.waitQ.size()>=1) {
+	//	System.out.print(" time:"+this.waitQ.firstKey() + "at: "+time);
+
+		while (this.waitQ.size() > 0 && this.waitQ.firstKey() <= time) {
+		//		System.out.println("MONKA IT MADE IT");
+				this.waitQ.get(this.waitQ.firstKey()).ready();
+				waitQ.remove(this.waitQ.firstKey());
 			}
 		}
-	}
+	
 	KThread.yield();
 	Machine.interrupt().restore(interrupt);
     }
@@ -61,13 +64,29 @@ public class Alarm {
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
 	long wakeTime = Machine.timer().getTime() + x;
-	
+//	System.out.println("waiting for: "+wakeTime);
+	KThread k = KThread.currentThread();
 	if( x<= 0) {
+	//	System.out.println("MONKA IT MADE IT");
+
 		return;
 	}
-	waitQ.put(wakeTime,KThread.currentThread());
-	KThread.sleep();
-    }
+//	waitLock.acquire();
+    boolean interrupt = Machine.interrupt().disable();
 
+//	System.out.print("WaitQ size before:" + this.waitQ.size());
+
+	this.waitQ.put(wakeTime,KThread.currentThread());
+//	System.out.print("WaitQ size:" + this.waitQ.size());
+
+	KThread.sleep();
+//	System.out.println("IIIr here");
+    Machine.interrupt().restore(interrupt);
+
+   // waitLock.release();
+//	System.out.println("Does it get here");
+
+    }
+    private Lock waitLock;
 	private TreeMap<Long,KThread> waitQ = null;
 }
