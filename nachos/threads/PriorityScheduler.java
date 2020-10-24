@@ -5,6 +5,8 @@ import nachos.machine.*;
 import java.util.TreeSet;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.TreeMap;
 
 /**
  * A scheduler that chooses threads based on their priorities.
@@ -129,6 +131,7 @@ public class PriorityScheduler extends Scheduler {
 	PriorityQueue(boolean transferPriority) {
 	    this.transferPriority = transferPriority;
 	    
+	//  newThreadQueue();
 	 ThreadState owner;
 	}
 
@@ -145,7 +148,25 @@ public class PriorityScheduler extends Scheduler {
 	public KThread nextThread() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    // implement me
-	    return null;
+		if(this.PQueue.isEmpty())
+		{
+				    return null;
+		}
+		if(this.owner != null) {
+			this.owner.ResourceList.remove(this);
+			this.owner.valid_bit = false;
+		}
+		ThreadState updated_TS = pickNextThread();
+		
+		for(ThreadState e : PQueue) {
+			if(e == updated_TS)
+			{
+				PQueue.remove(e);
+		
+			}
+		}
+		return updated_TS.thread;
+	    
 	}
 
 	/**
@@ -157,12 +178,30 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	protected ThreadState pickNextThread() {
 	    // implement me
-	    return null;
+		ThreadState ree = null;
+		int hpo = 0;
+		for(ThreadState e : PQueue) {
+			if(e.getEffectivePriority() == priorityMaximum) {
+				return e ;
+			}
+			if(e.getEffectivePriority() > hpo){
+				 hpo = e.getPriority();
+				 ree = e;
+			}
+			
+		}
+		return ree;
+		//picknextthread will be called in nextthread
+			
+
 	}
 	
 	public void print() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    // implement me (if you want)
+
+	    for (Iterator i=PQueue.iterator(); i.hasNext(); )
+		System.out.print((KThread) i.next() + " ");
 	}
 
 	/**
@@ -171,6 +210,7 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public boolean transferPriority;
 	public ThreadState owner = null;
+	private LinkedList<ThreadState> PQueue = new LinkedList<ThreadState>();
     }
 
     /**
@@ -209,7 +249,19 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public int getEffectivePriority() {
 	    // implement me
-	    return priority;
+		int priorityt = this.priority;
+		if(valid_bit == false) {
+		for(PriorityQueue e : ResourceList) {
+			if(e.transferPriority == true) {
+			int i = e.owner.getPriority();
+			if(i > priorityt) {
+				priorityt = i;
+			}}
+		}
+		
+		valid_bit = true;
+		}
+		return priorityt;
 	}
 
 	/**
@@ -221,7 +273,9 @@ public class PriorityScheduler extends Scheduler {
 	    if (this.priority == priority)
 		return;
 	    
+	    valid_bit = false;
 	    this.priority = priority;
+	    this.priority = this.getEffectivePriority();
 	    
 	    // implement me
 	}
@@ -241,7 +295,7 @@ public class PriorityScheduler extends Scheduler {
 	public void waitForAccess(PriorityQueue waitQueue) {
 	    // implement me
 		
-		ResourceList.add(waitQueue);
+		
 	}
 
 	/**
@@ -258,8 +312,13 @@ public class PriorityScheduler extends Scheduler {
 	    // implement me
 		if(waitQueue.owner !=null) {
 			waitQueue.owner.ResourceList.remove(waitQueue);
+			waitQueue.owner.valid_bit = false;
+			
+			waitQueue.owner.getEffectivePriority();
 		}
 		waitQueue.owner = this;
+		this.ResourceList.add(waitQueue);
+		valid_bit = false;
 		System.out.print("miwgeomngew");
 	}	
 
@@ -268,6 +327,11 @@ public class PriorityScheduler extends Scheduler {
 	/** The priority of the associated thread. */
 	protected int priority;
 	
+
+
+	protected int cursor = -1;
 	protected TreeSet<PriorityQueue> ResourceList = new TreeSet<PriorityQueue>();
+    public boolean valid_bit = true; //true if it hasn't been modified, false if it has
+
     }
 }
