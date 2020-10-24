@@ -128,6 +128,8 @@ public class PriorityScheduler extends Scheduler {
     protected class PriorityQueue extends ThreadQueue {
 	PriorityQueue(boolean transferPriority) {
 	    this.transferPriority = transferPriority;
+	    
+	 ThreadState owner;
 	}
 
 	public void waitForAccess(KThread thread) {
@@ -168,6 +170,7 @@ public class PriorityScheduler extends Scheduler {
 	 * threads to the owning thread.
 	 */
 	public boolean transferPriority;
+	public ThreadState owner = null;
     }
 
     /**
@@ -237,6 +240,8 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public void waitForAccess(PriorityQueue waitQueue) {
 	    // implement me
+		
+		ResourceList.add(waitQueue);
 	}
 
 	/**
@@ -251,11 +256,18 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public void acquire(PriorityQueue waitQueue) {
 	    // implement me
+		if(waitQueue.owner !=null) {
+			waitQueue.owner.ResourceList.remove(waitQueue);
+		}
+		waitQueue.owner = this;
+		System.out.print("miwgeomngew");
 	}	
 
 	/** The thread with which this object is associated. */	   
 	protected KThread thread;
 	/** The priority of the associated thread. */
 	protected int priority;
+	
+	protected TreeSet<PriorityQueue> ResourceList = new TreeSet<PriorityQueue>();
     }
 }
