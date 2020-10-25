@@ -2,9 +2,12 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+
 import java.util.TreeSet;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.*;
 
 /**
  * A scheduler that chooses threads based on their priorities.
@@ -128,22 +131,39 @@ public class PriorityScheduler extends Scheduler {
     protected class PriorityQueue extends ThreadQueue {
 	PriorityQueue(boolean transferPriority) {
 	    this.transferPriority = transferPriority;
+	    this.PQueue = new LinkedList<ThreadState>();
 	}
 
 	public void waitForAccess(KThread thread) {
 	    Lib.assertTrue(Machine.interrupt().disabled());
-	    getThreadState(thread).waitForAccess(this);
+	    ThreadState nextThread = getThreadState(thread);
+	    this.PQueue.add(nextThread);
+	    nextThread.waitForAccess(this);
 	}
 
 	public void acquire(KThread thread) {
 	    Lib.assertTrue(Machine.interrupt().disabled());
-	    getThreadState(thread).acquire(this);
+	    //getThreadState(thread).acquire(this);
+	    ThreadState nextThread = getThreadState(thread);
+	    if(this.Holder != null) {
+	    	this.Holder.release(this);
+	    }
+	    this.Holder = nextThread;
+	    nextThread.acquire(this);
 	}
 
 	public KThread nextThread() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    // implement me
-	    return null;
+	    ThreadState nextThread = this.pickNextThread();
+	    
+	    if(nextThread == null) {
+	    	return null;
+	    }
+	    this.PQueue.remove(nextThread);
+	    this.acquire(nextThread.fetchThread());
+	    
+	    return nextThread.fetchThread();
 	}
 
 	/**
@@ -154,13 +174,52 @@ public class PriorityScheduler extends Scheduler {
 	 *		return.
 	 */
 	protected ThreadState pickNextThread() {
+		int nextPrior = priorityMinimum;
+		
+		ThreadState nextThread = null;
+		
+		for(ThreadState currentThread: this.PQueue) {
+			int currentPrior = currentThread.getEffectivePriority();
+			if(nextThread == null || nextPrior < currentPrior) {
+				nextThread = currentThread;
+				nextPrior = currentPrior;
+			}
+		}
 	    // implement me
-	    return null;
+	    return nextThread;
 	}
 	
 	public void print() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
+	    /*for(ThreadState nextThread: this.PQueue) {
+	    	System.out.println(nextThread.getEffectivePriority());
+	    } */
 	    // implement me (if you want)
+	}
+	
+	public int getEffectivePriority() {
+		if(!this.transferPriority) {
+			return priorityMinimum;
+		}
+		else if(this.valid_bit) {
+			this.effectivePriority = priorityMinimum;
+			for(ThreadState currentThread: this.PQueue) {
+				this.effectivePriority = Math.max(this.effectivePriority, currentThread.getEffectivePriority());
+				////Takes max prior of queue of threads and stores into effectprior
+			}
+			this.valid_bit = false;
+		}
+		return effectivePriority;
+	}
+	
+	private void remove() {
+		if(!this.transferPriority) {
+			return;
+		}
+		this.valid_bit = true;
+		if(this.Holder != null) {
+			Holder.remove();
+		}
 	}
 
 	/**
@@ -168,6 +227,14 @@ public class PriorityScheduler extends Scheduler {
 	 * threads to the owning thread.
 	 */
 	public boolean transferPriority;
+	protected boolean valid_bit = false;
+	//Check if the eff priority is invalidated
+	protected ThreadState Holder = null;
+	//Holder for the threads in ThreadState
+	protected int effectivePriority = priorityMinimum;
+	//integer holding eff priority 0
+	protected LinkedList<ThreadState> PQueue = new LinkedList<ThreadState>();
+	//LinkedList of ThreadState that tracks all the threads in the waiting queue.
     }
 
     /**
@@ -186,6 +253,8 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public ThreadState(KThread thread) {
 	    this.thread = thread;
+	    this.resHaveCurr = new LinkedList<PriorityQueue>();
+	    this.resWaitFor = new LinkedList<PriorityQueue>();
 	    
 	    setPriority(priorityDefault);
 	}
@@ -206,7 +275,18 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public int getEffectivePriority() {
 	    // implement me
-	    return priority;
+		if(this.resHaveCurr.isEmpty()) {
+			return this.getPriority();
+		}
+		else if(this.valid_bit) {
+			this.effectivePriority = this.getPriority();
+			for(PriorityQueue e : this.resHaveCurr) {
+				this.effectivePriority = Math.max(this.effectivePriority, e.getEffectivePriority());
+				//Takes max prior of queue of threads and stores into effectprior
+			}
+			this.valid_bit = false;
+		}
+	    return this.effectivePriority;
 	}
 
 	/**
@@ -220,6 +300,9 @@ public class PriorityScheduler extends Scheduler {
 	    
 	    this.priority = priority;
 	    
+	    for(PriorityQueue e: resWaitFor) {
+	    	e.remove();
+	    }
 	    // implement me
 	}
 
@@ -237,6 +320,10 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public void waitForAccess(PriorityQueue waitQueue) {
 	    // implement me
+		this.resWaitFor.add(waitQueue);
+		this.resHaveCurr.remove(waitQueue);
+		waitQueue.remove();
+
 	}
 
 	/**
@@ -251,11 +338,43 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public void acquire(PriorityQueue waitQueue) {
 	    // implement me
+		this.resHaveCurr.add(waitQueue);
+		this.resWaitFor.remove(waitQueue);
+		this.remove();
 	}	
+	
+	public KThread fetchThread() {
+		return thread;
+	}
+	
+	public void release(PriorityQueue waitQueue) {
+		this.resHaveCurr.remove(waitQueue);
+		this.remove();
+	}
+	
+	private void remove() {
+		if(this.valid_bit) {
+			return;
+		}
+		this.valid_bit = true;
+		for (PriorityQueue e: this.resWaitFor) {
+			e.remove();
+		}
+	}
 
 	/** The thread with which this object is associated. */	   
 	protected KThread thread;
 	/** The priority of the associated thread. */
 	protected int priority;
+	protected boolean valid_bit = false;
+	//check if eff priority is invalidated in this ThreadState
+	protected int effectivePriority = priorityMinimum;
+	//integer holding eff priority 0
+	protected LinkedList<PriorityQueue> resHaveCurr = new LinkedList<PriorityQueue>();
+	//LinkedList of priorityqueue that tracks resources that are currently held
+	protected LinkedList<PriorityQueue> resWaitFor = new LinkedList<PriorityQueue>();
+	//LinkedList of priorityqueue that tracks resources that are being waited
     }
 }
+
+
