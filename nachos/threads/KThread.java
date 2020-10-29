@@ -29,7 +29,7 @@ import nachos.machine.*;
  * new KThread(p).fork();
  * </pre></blockquote>
  */
-public class KThread implements Comparable{
+public class KThread {
     /**
      * Get the current thread.
      *
@@ -474,5 +474,4 @@ public class KThread implements Comparable{
     private static KThread idleThread = null;
     private static Lock bock= new Lock();
     private static Condition waitQueue = new Condition(bock);
-
 }
