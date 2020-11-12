@@ -1,7 +1,7 @@
 package nachos.threads;
 
 import nachos.machine.*;
-
+import nachos.threads.LotteryScheduler.LotteryQueue;
 
 import java.util.TreeSet;
 import java.util.HashSet;
@@ -326,6 +326,13 @@ public class PriorityScheduler extends Scheduler {
 
 	}
 
+	public void waitForAccess(LotteryQueue waitQueue) {
+	    // implement me
+		this.resWaitFor.add(waitQueue);
+		this.resHaveCurr.remove(waitQueue);
+		waitQueue.remove();
+
+	}
 	/**
 	 * Called when the associated thread has acquired access to whatever is
 	 * guarded by <tt>waitQueue</tt>. This can occur either as a result of
@@ -352,7 +359,7 @@ public class PriorityScheduler extends Scheduler {
 		this.remove();
 	}
 	
-	private void remove() {
+	void remove() {
 		if(this.valid_bit) {
 			return;
 		}
@@ -364,6 +371,8 @@ public class PriorityScheduler extends Scheduler {
 
 	/** The thread with which this object is associated. */	   
 	protected KThread thread;
+	int ticketS=0;
+	int ticketE= 0;
 	/** The priority of the associated thread. */
 	protected int priority;
 	protected boolean valid_bit = false;
@@ -371,6 +380,8 @@ public class PriorityScheduler extends Scheduler {
 	protected int effectivePriority = priorityMinimum;
 	//integer holding eff priority 0
 	protected LinkedList<PriorityQueue> resHaveCurr = new LinkedList<PriorityQueue>();
+	protected LinkedList<LotteryQueue> resHaveCurr2 = new LinkedList<LotteryQueue>();
+
 	//LinkedList of priorityqueue that tracks resources that are currently held
 	protected LinkedList<PriorityQueue> resWaitFor = new LinkedList<PriorityQueue>();
 	//LinkedList of priorityqueue that tracks resources that are being waited

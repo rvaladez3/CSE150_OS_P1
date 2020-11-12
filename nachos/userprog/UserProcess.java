@@ -346,9 +346,47 @@ public class UserProcess {
 	return 0;
     }
 
-
+    private void exit(int status) {
+    	
+    }
+    int exec(int a0, int argc, int a2) {
+		
+    	
+    	return a2;
+    	
+    }
+    int join(int pid, int status) {
+		return status;
+    	
+    }
+    int creat(int name) {
+    	int x = 0;
+    	return x;
+    }
+    int open(int a0) {
+    	int x = 0;
+    	UserKernel.fileSystem.open(null, false);
+    	return x;
+    }
+    int read(int fd, int a1, int size) {
+    	int x = 0;
+    	UserKernel.fileSystem.read(//int pos, byte[] buf, int offset, int length//)
+    	return x;
+    }
+    int write(int fd, int a1, int size) {
+    	int x = 0;
+    	return x;
+    }
+    int close(int fd) {
+    	int x = 0;
+    	return x;
+    }
+    int  unlink(int a0) {
+    	int x = 0;
+    	return x;
+    }
     private static final int
-        syscallHalt = 0,
+    syscallHalt = 0,
 	syscallExit = 1,
 	syscallExec = 2,
 	syscallJoin = 3,
@@ -391,8 +429,32 @@ public class UserProcess {
 	switch (syscall) {
 	case syscallHalt:
 	    return handleHalt();
-
-
+	case syscallExit:
+		
+	case syscallExec:
+		exec(a0,a1,a2);
+		break;
+	case syscallJoin:
+		join(a0,a1);
+		break;
+	case syscallCreate:
+		creat(a0);
+		break;
+	case syscallOpen:
+		open(a0);
+		break;
+	case syscallRead:
+		read(a0,a1,a2);
+		break;
+	case syscallWrite:
+		write(a0,a1,a2);
+		break;
+	case syscallClose:
+		close(a0);
+		break;
+	case syscallUnlink:
+		unlink(a0);
+		break;
 	default:
 	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 	    Lib.assertNotReached("Unknown system call!");
@@ -446,4 +508,5 @@ public class UserProcess {
 	
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
+    private OpenFile ree;
 }
