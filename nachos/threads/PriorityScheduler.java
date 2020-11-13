@@ -255,6 +255,8 @@ public class PriorityScheduler extends Scheduler {
 	    this.thread = thread;
 	    this.resHaveCurr = new LinkedList<PriorityQueue>();
 	    this.resWaitFor = new LinkedList<PriorityQueue>();
+	    this.resHaveCurr2 = new LinkedList<LotteryQueue>();
+	    this.resWaitFor2 = new LinkedList<LotteryQueue>();
 	    
 	    setPriority(priorityDefault);
 	}
@@ -328,8 +330,8 @@ public class PriorityScheduler extends Scheduler {
 
 	public void waitForAccess(LotteryQueue waitQueue) {
 	    // implement me
-		this.resWaitFor.add(waitQueue);
-		this.resHaveCurr.remove(waitQueue);
+		this.resWaitFor2.add(waitQueue);
+		this.resHaveCurr2.remove(waitQueue);
 		waitQueue.remove();
 
 	}
@@ -349,7 +351,11 @@ public class PriorityScheduler extends Scheduler {
 		this.resWaitFor.remove(waitQueue);
 		this.remove();
 	}	
-	
+	public void acquire(LotteryQueue waitQueue) {
+		this.resHaveCurr2.add(waitQueue);
+		this.resWaitFor2.remove(waitQueue);
+		this.remove();
+	}
 	public KThread fetchThread() {
 		return thread;
 	}
@@ -358,7 +364,10 @@ public class PriorityScheduler extends Scheduler {
 		this.resHaveCurr.remove(waitQueue);
 		this.remove();
 	}
-	
+	public void release(LotteryQueue waitQueue) {
+		this.resHaveCurr.remove(waitQueue);
+		this.remove();
+	}
 	void remove() {
 		if(this.valid_bit) {
 			return;
@@ -368,6 +377,7 @@ public class PriorityScheduler extends Scheduler {
 			e.remove();
 		}
 	}
+
 
 	/** The thread with which this object is associated. */	   
 	protected KThread thread;
@@ -381,10 +391,15 @@ public class PriorityScheduler extends Scheduler {
 	//integer holding eff priority 0
 	protected LinkedList<PriorityQueue> resHaveCurr = new LinkedList<PriorityQueue>();
 	protected LinkedList<LotteryQueue> resHaveCurr2 = new LinkedList<LotteryQueue>();
+	protected LinkedList<LotteryQueue> resWaitFor2 = new LinkedList<LotteryQueue>();
 
 	//LinkedList of priorityqueue that tracks resources that are currently held
 	protected LinkedList<PriorityQueue> resWaitFor = new LinkedList<PriorityQueue>();
 	//LinkedList of priorityqueue that tracks resources that are being waited
+
+
+
+
     }
 }
 

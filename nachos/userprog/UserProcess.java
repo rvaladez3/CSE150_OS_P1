@@ -359,8 +359,13 @@ public class UserProcess {
 		return status;
     	
     }
-    int creat(int name) {
+    int creat(int address) {
     	int x = 0;
+    	String fileName = readVirtualMemoryString(address, 256);
+    	if(address < 0 || fileName == null) {
+    		return -1;
+    	}
+    	
     	return x;
     }
     int open(int a0) {
@@ -370,11 +375,12 @@ public class UserProcess {
     }
     int read(int fd, int a1, int size) {
     	int x = 0;
-    	UserKernel.fileSystem.read(//int pos, byte[] buf, int offset, int length//)
+    	:^) wutface
+    //	UserKernel.fileSystem.read();//int pos, byte[] buf, int offset, int length//)
     	return x;
     }
     int write(int fd, int a1, int size) {
-    	int x = 0;
+    	int x = 0; 
     	return x;
     }
     int close(int fd) {
