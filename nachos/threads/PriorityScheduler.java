@@ -1,7 +1,7 @@
 package nachos.threads;
 
 import nachos.machine.*;
-
+import nachos.threads.LotteryScheduler.LotteryQueue;
 
 import java.util.TreeSet;
 import java.util.HashSet;
@@ -255,6 +255,8 @@ public class PriorityScheduler extends Scheduler {
 	    this.thread = thread;
 	    this.resHaveCurr = new LinkedList<PriorityQueue>();
 	    this.resWaitFor = new LinkedList<PriorityQueue>();
+	    this.resHaveCurr2 = new LinkedList<LotteryQueue>();
+	    this.resWaitFor2 = new LinkedList<LotteryQueue>();
 	    
 	    setPriority(priorityDefault);
 	}
@@ -326,6 +328,13 @@ public class PriorityScheduler extends Scheduler {
 
 	}
 
+	public void waitForAccess(LotteryQueue waitQueue) {
+	    // implement me
+		this.resWaitFor2.add(waitQueue);
+		this.resHaveCurr2.remove(waitQueue);
+		waitQueue.remove();
+
+	}
 	/**
 	 * Called when the associated thread has acquired access to whatever is
 	 * guarded by <tt>waitQueue</tt>. This can occur either as a result of
@@ -342,7 +351,11 @@ public class PriorityScheduler extends Scheduler {
 		this.resWaitFor.remove(waitQueue);
 		this.remove();
 	}	
-	
+	public void acquire(LotteryQueue waitQueue) {
+		this.resHaveCurr2.add(waitQueue);
+		this.resWaitFor2.remove(waitQueue);
+		this.remove();
+	}
 	public KThread fetchThread() {
 		return thread;
 	}
@@ -351,8 +364,11 @@ public class PriorityScheduler extends Scheduler {
 		this.resHaveCurr.remove(waitQueue);
 		this.remove();
 	}
-	
-	private void remove() {
+	public void release(LotteryQueue waitQueue) {
+		this.resHaveCurr.remove(waitQueue);
+		this.remove();
+	}
+	void remove() {
 		if(this.valid_bit) {
 			return;
 		}
@@ -362,8 +378,11 @@ public class PriorityScheduler extends Scheduler {
 		}
 	}
 
+
 	/** The thread with which this object is associated. */	   
 	protected KThread thread;
+	int ticketS=0;
+	int ticketE= 0;
 	/** The priority of the associated thread. */
 	protected int priority;
 	protected boolean valid_bit = false;
@@ -371,9 +390,16 @@ public class PriorityScheduler extends Scheduler {
 	protected int effectivePriority = priorityMinimum;
 	//integer holding eff priority 0
 	protected LinkedList<PriorityQueue> resHaveCurr = new LinkedList<PriorityQueue>();
+	protected LinkedList<LotteryQueue> resHaveCurr2 = new LinkedList<LotteryQueue>();
+	protected LinkedList<LotteryQueue> resWaitFor2 = new LinkedList<LotteryQueue>();
+
 	//LinkedList of priorityqueue that tracks resources that are currently held
 	protected LinkedList<PriorityQueue> resWaitFor = new LinkedList<PriorityQueue>();
 	//LinkedList of priorityqueue that tracks resources that are being waited
+
+
+
+
     }
 }
 

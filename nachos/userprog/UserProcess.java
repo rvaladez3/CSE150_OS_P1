@@ -25,6 +25,10 @@ public class UserProcess {
     public UserProcess() {
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pageTable = new TranslationEntry[numPhysPages];
+	ree = new OpenFile[16];
+	ree[0] = UserKernel.console.openForReading();
+	ree[1] = UserKernel.console.openForWriting();
+
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
     }
@@ -32,7 +36,7 @@ public class UserProcess {
     /**
      * Allocate and return a new process of the correct class. The class name
      * is specified by the <tt>nachos.conf</tt> key
-     * <tt>Kernel.processClassName</tt>.
+     * <tt>Kernel.processClas5sName</tt>.
      *
      * @return	a new process of the correct class.
      */
@@ -346,9 +350,53 @@ public class UserProcess {
 	return 0;
     }
 
-
+    private void exit(int status) {
+    	
+    }
+    int exec(int a0, int argc, int a2) {
+		
+    	
+    	return a2;
+    	
+    }
+    int join(int pid, int status) {
+		return status;
+    	
+    }
+    int creat(int address) {
+    	int x = 0;
+    	String fileName = readVirtualMemoryString(address, 256);
+    	if(address < 0 || fileName == null) {
+    		return -1;
+    	}
+    	
+    	return x;
+    }
+    int open(int a0) {
+    	int x = 0;
+    	UserKernel.fileSystem.open(null, false);
+    	return x;
+    }
+    int read(int fd, int a1, int size) {
+    	int x = 0;
+    //	:^) wutface
+    //	UserKernel.fileSystem.read();//int pos, byte[] buf, int offset, int length//)
+    	return x;
+    }
+    int write(int fd, int a1, int size) {
+    	int x = 0; 
+    	return x;
+    }
+    int close(int fd) {
+    	int x = 0;
+    	return x;
+    }
+    int  unlink(int a0) {
+    	int x = 0;
+    	return x;
+    }
     private static final int
-        syscallHalt = 0,
+    syscallHalt = 0,
 	syscallExit = 1,
 	syscallExec = 2,
 	syscallJoin = 3,
@@ -391,8 +439,32 @@ public class UserProcess {
 	switch (syscall) {
 	case syscallHalt:
 	    return handleHalt();
-
-
+	case syscallExit:
+		
+	case syscallExec:
+		exec(a0,a1,a2);
+		break;
+	case syscallJoin:
+		join(a0,a1);
+		break;
+	case syscallCreate:
+		creat(a0);
+		break;
+	case syscallOpen:
+		open(a0);
+		break;
+	case syscallRead:
+		read(a0,a1,a2);
+		break;
+	case syscallWrite:
+		write(a0,a1,a2);
+		break;
+	case syscallClose:
+		close(a0);
+		break;
+	case syscallUnlink:
+		unlink(a0);
+		break;
 	default:
 	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 	    Lib.assertNotReached("Unknown system call!");
@@ -446,4 +518,5 @@ public class UserProcess {
 	
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
+    private OpenFile ree[];
 }
