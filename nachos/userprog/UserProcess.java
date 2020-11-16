@@ -25,6 +25,10 @@ public class UserProcess {
     public UserProcess() {
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pageTable = new TranslationEntry[numPhysPages];
+	ree = new OpenFile[16];
+	ree[0] = UserKernel.console.openForReading();
+	ree[1] = UserKernel.console.openForWriting();
+
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
     }
@@ -32,7 +36,7 @@ public class UserProcess {
     /**
      * Allocate and return a new process of the correct class. The class name
      * is specified by the <tt>nachos.conf</tt> key
-     * <tt>Kernel.processClassName</tt>.
+     * <tt>Kernel.processClas5sName</tt>.
      *
      * @return	a new process of the correct class.
      */
@@ -375,7 +379,7 @@ public class UserProcess {
     }
     int read(int fd, int a1, int size) {
     	int x = 0;
-    	:^) wutface
+    //	:^) wutface
     //	UserKernel.fileSystem.read();//int pos, byte[] buf, int offset, int length//)
     	return x;
     }
@@ -514,5 +518,5 @@ public class UserProcess {
 	
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
-    private OpenFile ree;
+    private OpenFile ree[];
 }
