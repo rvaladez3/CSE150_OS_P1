@@ -5,6 +5,7 @@ import nachos.threads.*;
 import nachos.userprog.*;
 
 import java.io.EOFException;
+import java.nio.file.FileSystem;
 import java.util.HashMap;
 
 /**
@@ -350,15 +351,27 @@ public class UserProcess {
 	Lib.assertNotReached("Machine.halt() did not halt machine!");
 	return 0;
     }
-
+    /*
     private void exit(int status) {
     	
     }
-    int exec(int a0, int argc, int a2) {
-		
+    */
+    int exec(int a0, int a1, int a2) {
+		String file = readVirtualMemoryString(a0, 256);
+		if(a0 < 0 || a1 < 0 || a2 < 0 || file == null) {
+			return -1;
+		}
+    	String[] argv = new String[a1];
+    	for(int i = 0; i < a1; i++) {
+    		int temp = readVirtualMemory(a2, data);
+    		
+    	}
+    	UserProcess child = UserProcess.newUserProcess();
+    	child.curr_TPID = rand_TPID;
     	
-    	return a2;
     	
+    	
+    	return -1;
     }
     int join(int pid, int status) {
 		return status;
@@ -394,19 +407,46 @@ public class UserProcess {
     	ree[filedesc] = OF;
     	return filedesc;
     }
-    int read(int fd, int a1, int size) {
+    int read(int fd, int buffptr, int size) {
     	int x = 0;
     //	:^) wutface
     //	UserKernel.fileSystem.read();//int pos, byte[] buf, int offset, int length//)
+    	if(fd <0 || fd >15) {
+    		return -1;
+    	}
+    	byte[] temp = new byte[size];
+    	//temp = UserProcess.readVirtualMemory(fd, temp);
+    	int offset = 0;
+    	x = ree[fd].read(temp, offset, size);
+    	
+    	
     	return x;
     }
     int write(int fd, int a1, int size) {
+    	if(fd <0 || fd >15) {
+    		return -1;
+    	}
+    	byte[] temp = new byte[size];
+    	
+    	
     	int x = 0; 
     	return x;
     }
     int close(int fd) {
     	int x = 0;
-    	/*
+    	String file = readVirtualMemoryString(fd, 256);
+		int filedesc = FDFinder();
+		
+    	if(fd<0 && fd> Machine.processor().getMemory().length) {
+    		return -1;
+    	}
+    	
+    	else
+    		ree[filedesc].close();
+    		ree[filedesc] = null;
+    	
+    		
+/*
        .               ,.
        T."-._..---.._,-"/|
        l|"-.  _.v._   (" |
@@ -432,12 +472,26 @@ public class UserProcess {
 
 ------------------------------------------------
 */
+    		
     	return x;
     }
     int  unlink(int a0) {
     	int x = 0;
+    	
+    	if(a0<0 && a0> Machine.processor().getMemory().length) {
+    		return -1;
+    	}
+    	int filedesc = FDFinder();
+    	String file = readVirtualMemoryString(a0, 256);
+    	ThreadedKernel.fileSystem.remove(file);
+    	
     	return x;
+    	
+    	
+    	
     }
+    
+    
     int FDFinder() {
     	int fd = 16;
     	for(int i=0;i<16;i++ ) {		//finds and returns first open file descriptor
@@ -567,7 +621,8 @@ public class UserProcess {
     
     private int initialPC, initialSP;
     private int argc, argv;
-	
+	private int curr_TPID;
+	private int rand_TPID;
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
     private HashMap<Integer,OpenFile> reee;
