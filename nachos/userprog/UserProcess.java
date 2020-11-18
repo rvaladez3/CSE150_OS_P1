@@ -5,6 +5,7 @@ import nachos.threads.*;
 import nachos.userprog.*;
 
 import java.io.EOFException;
+import java.util.HashMap;
 
 /**
  * Encapsulates the state of a user process that is not contained in its
@@ -364,18 +365,34 @@ public class UserProcess {
     	
     }
     int creat(int address) {
-    	int x = 0;
-    	String fileName = readVirtualMemoryString(address, 256);
-    	if(address < 0 || fileName == null) {
+    	if(address<0 && address> Machine.processor().getMemory().length) {
     		return -1;
     	}
-    	
-    	return x;
+    	String file = readVirtualMemoryString(address, 256);
+    	int filedesc = FDFinder();
+    	if(filedesc == 16) {
+    		return -1;
+    	}
+    	OpenFile OF = ThreadedKernel.fileSystem.open(file, true);
+    	if(OF == null) {
+    		return -1;
+    	}
+    	ree[filedesc] = OF;
+    	return filedesc;
     }
     int open(int a0) {
-    	int x = 0;
-    	UserKernel.fileSystem.open(null, false);
-    	return x;
+    	if(a0<0 && a0> Machine.processor().getMemory().length) {
+    		return -1;
+    	}
+    	String file = readVirtualMemoryString(a0, 256);
+    	int filedesc = FDFinder();
+    	
+    	OpenFile OF = ThreadedKernel.fileSystem.open(file, false);
+    	if(OF == null) {
+    		return -1;
+    	}
+    	ree[filedesc] = OF;
+    	return filedesc;
     }
     int read(int fd, int a1, int size) {
     	int x = 0;
@@ -389,11 +406,46 @@ public class UserProcess {
     }
     int close(int fd) {
     	int x = 0;
+    	/*
+       .               ,.
+       T."-._..---.._,-"/|
+       l|"-.  _.v._   (" |
+       [l /.'_ \; _~"-.`-t
+       Y " _(o} _{o)._ ^.|
+       j  T  ,-<v>-.  T  ]
+       \  l ( /-^-\ ) !  !
+        \. \.  "~"  ./  /c-..,__
+          ^r- .._ .- .-"  `- .  ~"--.
+           > \.                      \
+           ]   ^.                     \
+           3  .  ">            .       Y  -Row
+,.__.--._   _j   \ ~   .         ;       |
+(    ~"-._~"^._\   ^.    ^._      I     . l
+"-._ ___ ~"-,_7    .Z-._   7"   Y      ;  \        _
+ /"   "~-(r r  _/_--._~-/    /      /,.--^-._   / Y
+ "-._    '"~~~>-._~]>--^---./____,.^~        ^.^  !
+     ~--._    '   Y---.                        \./
+          ~~--._  l_   )                        \
+                ~-._~~~---._,____..---           \
+                    ~----"~       \
+                                   \
+
+------------------------------------------------
+*/
     	return x;
     }
     int  unlink(int a0) {
     	int x = 0;
     	return x;
+    }
+    int FDFinder() {
+    	int fd = 16;
+    	for(int i=0;i<16;i++ ) {		//finds and returns first open file descriptor
+    		if(ree[i]== null) {
+    			return i;
+    		}
+    	}
+    	return fd;
     }
     private static final int
     syscallHalt = 0,
@@ -518,5 +570,6 @@ public class UserProcess {
 	
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
+    private HashMap<Integer,OpenFile> reee;
     private OpenFile ree[];
 }
