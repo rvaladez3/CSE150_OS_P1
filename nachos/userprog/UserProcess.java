@@ -5,7 +5,6 @@ import nachos.threads.*;
 import nachos.userprog.*;
 
 import java.io.EOFException;
-import java.nio.file.FileSystem;
 import java.util.HashMap;
 
 /**
@@ -27,10 +26,10 @@ public class UserProcess {
     public UserProcess() {
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pageTable = new TranslationEntry[numPhysPages];
-	ree = new OpenFile[16];
-	ree[0] = UserKernel.console.openForReading();
-	ree[1] = UserKernel.console.openForWriting();
-
+	this.ree = new OpenFile[16];
+	this.ree[0] = UserKernel.console.openForReading();
+	this.ree[1] = UserKernel.console.openForWriting();
+	numopen = 2;
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
     }
@@ -363,7 +362,7 @@ public class UserProcess {
 		}
     	String[] argv = new String[a1];
     	for(int i = 0; i < a1; i++) {
-    		int temp = readVirtualMemory(a2, data);
+    	//	int temp = readVirtualMemory(a2, data);
     		
     	}
     	UserProcess child = UserProcess.newUserProcess();
@@ -378,12 +377,19 @@ public class UserProcess {
     	
     }
     int creat(int address) {
+    	if(numopen == 16) {
+        	System.out.println("numopen too big");
+
+    		return -1;
+    	}
     	if(address<0 && address> Machine.processor().getMemory().length) {
     		return -1;
     	}
     	String file = readVirtualMemoryString(address, 256);
     	int filedesc = FDFinder();
-    	if(filedesc == 16) {
+    	if(filedesc >= 16) {
+        	System.out.println("filedesc too big");
+
     		return -1;
     	}
     	OpenFile OF = ThreadedKernel.fileSystem.open(file, true);
@@ -391,20 +397,38 @@ public class UserProcess {
     		return -1;
     	}
     	ree[filedesc] = OF;
+    	numopen++;
     	return filedesc;
     }
     int open(int a0) {
+
     	if(a0<0 && a0> Machine.processor().getMemory().length) {
     		return -1;
     	}
     	String file = readVirtualMemoryString(a0, 256);
-    	int filedesc = FDFinder();
-    	
-    	OpenFile OF = ThreadedKernel.fileSystem.open(file, false);
-    	if(OF == null) {
+
+    	if(file == null ||file.length()==0) {
+        	System.out.println("bad name");
+
     		return -1;
     	}
-    	ree[filedesc] = OF;
+    	int filedesc = FDFinder();
+    	if(filedesc >=16) {
+        	System.out.println("filedesc too big");
+
+    		return -1;
+    	}
+    	OpenFile OF = ThreadedKernel.fileSystem.open(file, false);
+   /* 	if(OF == null) {
+        	System.out.println("nothing in file");
+
+    		return -1;
+    	}
+	*/
+    	this.ree[filedesc] = OF;
+    	System.out.println(numopen + " and "+file);
+
+    	numopen++;
     	return filedesc;
     }
     int read(int fd, int buffptr, int size) {
@@ -434,45 +458,18 @@ public class UserProcess {
     }
     int close(int fd) {
     	int x = 0;
-    	String file = readVirtualMemoryString(fd, 256);
-		int filedesc = FDFinder();
-		
-    	if(fd<0 && fd> Machine.processor().getMemory().length) {
+		//int filedesc = FDFinder();
+    	if(fd < 0 || fd >15) {
+    		return -1;
+    	}
+    	if(fd<0 && fd> Machine.processor().getMemory().length || ree[fd] == null) {
     		return -1;
     	}
     	
     	else
-    		ree[filedesc].close();
-    		ree[filedesc] = null;
-    	
-    		
-/*
-       .               ,.
-       T."-._..---.._,-"/|
-       l|"-.  _.v._   (" |
-       [l /.'_ \; _~"-.`-t
-       Y " _(o} _{o)._ ^.|
-       j  T  ,-<v>-.  T  ]
-       \  l ( /-^-\ ) !  !
-        \. \.  "~"  ./  /c-..,__
-          ^r- .._ .- .-"  `- .  ~"--.
-           > \.                      \
-           ]   ^.                     \
-           3  .  ">            .       Y  -Row
-,.__.--._   _j   \ ~   .         ;       |
-(    ~"-._~"^._\   ^.    ^._      I     . l
-"-._ ___ ~"-,_7    .Z-._   7"   Y      ;  \        _
- /"   "~-(r r  _/_--._~-/    /      /,.--^-._   / Y
- "-._    '"~~~>-._~]>--^---./____,.^~        ^.^  !
-     ~--._    '   Y---.                        \./
-          ~~--._  l_   )                        \
-                ~-._~~~---._,____..---           \
-                    ~----"~       \
-                                   \
-
-------------------------------------------------
-*/
-    		
+    		ree[fd].close();
+    		ree[fd] = null;
+    		numopen--;
     	return x;
     }
     int  unlink(int a0) {
@@ -493,9 +490,10 @@ public class UserProcess {
     
     
     int FDFinder() {
-    	int fd = 16;
+    	int fd = 115;
     	for(int i=0;i<16;i++ ) {		//finds and returns first open file descriptor
-    		if(ree[i]== null) {
+    		if(this.ree[i]== null) {
+    			System.out.println("you can have "+i);
     			return i;
     		}
     	}
@@ -623,6 +621,7 @@ public class UserProcess {
     private int argc, argv;
 	private int curr_TPID;
 	private int rand_TPID;
+	int numopen;
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
     private HashMap<Integer,OpenFile> reee;
