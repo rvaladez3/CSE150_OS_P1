@@ -133,6 +133,10 @@ public class PriorityScheduler extends Scheduler {
 	    this.transferPriority = transferPriority;
 	    this.PQueue = new LinkedList<ThreadState>();
 	}
+	PriorityQueue(){
+		this.transferPriority = false;
+	    this.PQueue = new LinkedList<ThreadState>();
+	}
 
 	public void waitForAccess(KThread thread) {
 	    Lib.assertTrue(Machine.interrupt().disabled());
@@ -212,7 +216,7 @@ public class PriorityScheduler extends Scheduler {
 		return effectivePriority;
 	}
 	
-	private void remove() {
+	void remove() {
 		if(!this.transferPriority) {
 			return;
 		}
@@ -328,13 +332,7 @@ public class PriorityScheduler extends Scheduler {
 
 	}
 
-	public void waitForAccess(LotteryQueue waitQueue) {
-	    // implement me
-		this.resWaitFor2.add(waitQueue);
-		this.resHaveCurr2.remove(waitQueue);
-		waitQueue.remove();
 
-	}
 	/**
 	 * Called when the associated thread has acquired access to whatever is
 	 * guarded by <tt>waitQueue</tt>. This can occur either as a result of
@@ -351,11 +349,7 @@ public class PriorityScheduler extends Scheduler {
 		this.resWaitFor.remove(waitQueue);
 		this.remove();
 	}	
-	public void acquire(LotteryQueue waitQueue) {
-		this.resHaveCurr2.add(waitQueue);
-		this.resWaitFor2.remove(waitQueue);
-		this.remove();
-	}
+
 	public KThread fetchThread() {
 		return thread;
 	}

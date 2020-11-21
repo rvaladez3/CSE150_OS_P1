@@ -63,61 +63,26 @@ public class LotteryScheduler extends PriorityScheduler {
     	return new LotteryQueue(transferPriority);
 
     }
-    	
-    
    
-    protected ThreadState2 getThreadState2(KThread thread) {
-    	if (thread.schedulingState == null)
-    	    thread.schedulingState = new ThreadState2(thread);
-
-    	return (ThreadState2) thread.schedulingState;
-    }
-    public int getPriority(KThread thread) {
-    	return getPriority(thread);
-    }
-    public void setPriority(KThread thread, int priority) {
-    	setPriority(thread,priority);
-    }
-    public boolean increasePriority() {
-    	return increasePriority();
-    }
-    public boolean decreasePriority() {
-    	return decreasePriority();
-    }
-    protected class LotteryQueue extends ThreadQueue {
+    protected class LotteryQueue extends PriorityQueue {
     	
     	LotteryQueue(boolean transferPriority) {
     	    this.transferPriority = transferPriority;
-    	    this.PQueue = new LinkedList<ThreadState2>();
+    	 //   this.LQueue = new LinkedList<LSThreadState>();
     	}
-
-    	public void waitForAccess(KThread thread) {
-    	    Lib.assertTrue(Machine.interrupt().disabled());
-    	    ThreadState2 nextThread = getThreadState2(thread);
-    	    this.PQueue.add(nextThread);
-    	    nextThread.waitForAccess(this);
-    	}
-
-    	public void acquire(KThread thread) {
-    	    Lib.assertTrue(Machine.interrupt().disabled());
-    	    //getThreadState2(thread).acquire(this);
-    	    ThreadState2 nextThread = getThreadState2(thread);
-    	    if(this.Holder != null) {
-    	    	this.Holder.release(this);
-    	    }
-    	    this.Holder = nextThread;
-    	    nextThread.acquire(this);
+    	LotteryQueue(){
+    		this.transferPriority = false;
     	}
 
     	public KThread nextThread() {
     	    Lib.assertTrue(Machine.interrupt().disabled());
     	    // implement me
-    	    ThreadState2 nextThread = this.pickNextThread();
+    	    LSThreadState nextThread = this.pickNextThread();
     	    
     	    if(nextThread == null) {
     	    	return null;
     	    }
-    	    this.PQueue.remove(nextThread);
+    	    this.LQueue.remove(nextThread);
     	    this.acquire(nextThread.fetchThread());
     	    
     	    return nextThread.fetchThread();
@@ -130,35 +95,27 @@ public class LotteryScheduler extends PriorityScheduler {
     	 * @return	the next thread that <tt>nextThread()</tt> would
     	 *		return.
     	 */
-    	protected ThreadState2 pickNextThread() {
+    	protected LSThreadState pickNextThread() {
     		
     	
     		int winningticket = 0 + ((int)Math.random()*TicketTrack); 
-    		ThreadState2 nextThread = null;
+    		LSThreadState nextThread = null;
     		
-    		for(ThreadState2 currentThread: this.PQueue) {
+    		for(LSThreadState currentThread: this.LQueue) {
     			if(currentThread.ticketS <= winningticket && currentThread.ticketE>=winningticket) {
     				return currentThread;
     			}
     		}
     		return null;
     	}
-    	
-    	public void print() {
-    	    Lib.assertTrue(Machine.interrupt().disabled());
-    	    /*for(ThreadState2 nextThread: this.PQueue) {
-    	    	System.out.println(nextThread.getEffectivePriority());
-    	    } */
-    	    // implement me (if you want)
-    	}
-    	
+    @Override
     	public int getEffectivePriority() {
     		if(!this.transferPriority) {
     			return priorityMinimum;
     		}
     		else if(this.valid_bit) {
     			this.effectivePriority = priorityMinimum;
-    			for(ThreadState2 currentThread: this.PQueue) {
+    			for(LSThreadState currentThread: this.LQueue) {
     				this.effectivePriority += currentThread.getEffectivePriority();
     				////Takes max prior of queue of threads and stores into effectprior
     			}
@@ -166,37 +123,22 @@ public class LotteryScheduler extends PriorityScheduler {
     		}
     		return effectivePriority;
     	}
-    	public void remove() {
-    		if(!this.transferPriority) {
-    			return;
-    		}
-    		this.valid_bit = true;
-    		if(this.Holder != null) {
-    			Holder.remove();
-    		}
-    	}
-    	/**
-    	 * <tt>true</tt> if this queue should transfer priority from waiting
-    	 * threads to the owning thread.
-    	 */
-    	public boolean transferPriority;
-    	protected boolean valid_bit = false;
-    	//Check if the eff priority is invalidated
-    	protected ThreadState2 Holder = null;
-    	//Holder for the threads in ThreadState2
-    	protected int effectivePriority = priorityMinimum;
-    	//integer holding eff priority 0
-    	protected LinkedList<ThreadState2> PQueue = new LinkedList<ThreadState2>();
-    	//LinkedList of ThreadState2 that tracks all the threads in the waiting queue.
-        }
-    protected class ThreadState2 {
-    	/**
-    	 * Allocate a new <tt>ThreadState2</tt> object and associate it with the
+	protected LinkedList<LSThreadState> LQueue = new LinkedList<LSThreadState>();
+	    	
+    }
+    protected class LSThreadState extends ThreadState {
+    	public LSThreadState(KThread thread) {
+			super(thread);
+			// TODO Auto-generated constructor stub
+		}
+
+		/**
+    	 * Allocate a new <tt>LSThreadState</tt> object and associate it with the
     	 * specified thread.
     	 *
     	 * @param	thread	the thread this state belongs to.
-    	 */
-    	public ThreadState2(KThread thread) {
+    	 
+    	public LSThreadState(KThread thread) {
     	    this.thread = thread;
     	    this.resHaveCurr = new LinkedList<LotteryQueue>();
     	    this.resWaitFor = new LinkedList<LotteryQueue>();
@@ -205,7 +147,7 @@ public class LotteryScheduler extends PriorityScheduler {
     	    
     	    setPriority(priorityDefault);
     	}
-
+*/
     	/**
     	 * Return the priority of the associated thread.
     	 *
@@ -315,13 +257,14 @@ public class LotteryScheduler extends PriorityScheduler {
 
 
     	/** The thread with which this object is associated. */	   
+    	
     	protected KThread thread;
     	int ticketS= 0;
     	int ticketE= 0;
     	/** The priority of the associated thread. */
     	protected int priority;
     	protected boolean valid_bit = false;
-    	//check if eff priority is invalidated in this ThreadState2
+    	//check if eff priority is invalidated in this LSThreadState
     	protected int effectivePriority = priorityMinimum;
     	//integer holding eff priority 0
     	protected LinkedList<LotteryQueue> resHaveCurr = new LinkedList<LotteryQueue>();

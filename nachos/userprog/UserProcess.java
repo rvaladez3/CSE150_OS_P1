@@ -26,10 +26,9 @@ public class UserProcess {
     public UserProcess() {
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pageTable = new TranslationEntry[numPhysPages];
-	this.ree = new OpenFile[16];
-	this.ree[0] = UserKernel.console.openForReading();
-	this.ree[1] = UserKernel.console.openForWriting();
-	numopen = 2;
+	ree = new OpenFile[16];
+	ree[0] = UserKernel.console.openForReading();
+	ree[1] = UserKernel.console.openForWriting();
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
     }
@@ -355,7 +354,7 @@ public class UserProcess {
     	
     }
     */
-    int exec(int a0, int a1, int a2) {
+    public int exec(int a0, int a1, int a2) {
 		String file = readVirtualMemoryString(a0, 256);
 		if(a0 < 0 || a1 < 0 || a2 < 0 || file == null) {
 			return -1;
@@ -372,23 +371,19 @@ public class UserProcess {
     	
     	return -1;
     }
-    int join(int pid, int status) {
+    public int join(int pid, int status) {
 		return status;
     	
     }
-    int creat(int address) {
-    	if(numopen == 16) {
-        	System.out.println("numopen too big");
+    public int creat(int address) {
 
-    		return -1;
-    	}
     	if(address<0 && address> Machine.processor().getMemory().length) {
     		return -1;
     	}
     	String file = readVirtualMemoryString(address, 256);
     	int filedesc = FDFinder();
     	if(filedesc >= 16) {
-        	System.out.println("filedesc too big");
+        	//System.out.println("filedesc too big");
 
     		return -1;
     	}
@@ -397,40 +392,64 @@ public class UserProcess {
     		return -1;
     	}
     	ree[filedesc] = OF;
-    	numopen++;
     	return filedesc;
     }
-    int open(int a0) {
+   public int Hopen(int a0) {
+		/*
+		 * if(a0<0 && a0> Machine.processor().getMemory().length) {
+		 * //System.out.println("wtf");
+		 * 
+		 * return -1; } String file = readVirtualMemoryString(a0, 256);
+		 * 
+		 * if(file == null ||file.length()==0) { //System.out.println("bad name");
+		 * 
+		 * return -1; } int filedesc = FDFinder(); if(filedesc >=16 || filedesc <= 0) {
+		 * //System.out.println("filedesc too big");
+		 * 
+		 * return -1; } OpenFile OF = ThreadedKernel.fileSystem.open(file, false); if(OF
+		 * == null) { //System.out.println("nothing in file");
+		 * 
+		 * return -1; }
+		 * 
+		 * this.ree[filedesc] = OF; //System.out.println(numopen + " and "+file);
+		 * 
+		 * numopen++; return filedesc;
+		 *
+		 */
+    	
+    
 
-    	if(a0<0 && a0> Machine.processor().getMemory().length) {
-    		return -1;
-    	}
     	String file = readVirtualMemoryString(a0, 256);
-
-    	if(file == null ||file.length()==0) {
-        	System.out.println("bad name");
-
-    		return -1;
-    	}
     	int filedesc = FDFinder();
-    	if(filedesc >=16) {
-        	System.out.println("filedesc too big");
+    	if(filedesc == -1) {
+        	//System.out.println("filedesc too big");
 
     		return -1;
     	}
     	OpenFile OF = ThreadedKernel.fileSystem.open(file, false);
-   /* 	if(OF == null) {
-        	System.out.println("nothing in file");
-
+    	if(OF == null) {
     		return -1;
     	}
-	*/
-    	this.ree[filedesc] = OF;
-    	System.out.println(numopen + " and "+file);
-
-    	numopen++;
-    	return filedesc;
+    	ree[filedesc] = OF;
+ 
+    	return filedesc;	
     }
+    public int read(int fileDescriptor, int buffer, int numBytesToRead) {
+        if(fileDescriptor > 15 || fileDescriptor < 0 || ree[fileDescriptor] == null || numBytesToRead < 0)return -1;//checks to see if fileDescriptor is out of bounds
+        //also checks to see if fileDescripor is a valid descriptor
+        byte[] processBuffer = new byte[numBytesToRead];//size is numBytes to read
+        
+        int numsBytesRead = ree[fileDescriptor].read(processBuffer, 0, numBytesToRead); 
+        
+        if(numsBytesRead == -1)return -1;
+        
+        int numBytesWritten = writeVirtualMemory(buffer, processBuffer, 0, numBytesToRead);
+        
+        if(numBytesWritten != numsBytesRead)return -1;
+        
+        return numBytesWritten;
+    }
+    /*
     int read(int fd, int buffptr, int size) {
     	int x = 0;
     //	:^) wutface
@@ -441,12 +460,24 @@ public class UserProcess {
     	byte[] temp = new byte[size];
     	//temp = UserProcess.readVirtualMemory(fd, temp);
     	int offset = 0;
+    	if(ree[fd]== null) {
+    		return -1;
+    	}
     	x = ree[fd].read(temp, offset, size);
-    	
+    	if(x == -1) {
+    		return -1;
+    	}
+    	int xcheck = writeVirtualMemory(buffptr, temp, 0, size);
+        
+        if(x != xcheck) {
+        	return -1;
+        }
+        
     	
     	return x;
     }
-    int write(int fd, int a1, int size) {
+    */
+   public int write(int fd, int a1, int size) {
     	if(fd <0 || fd >15) {
     		return -1;
     	}
@@ -456,7 +487,9 @@ public class UserProcess {
     	int x = 0; 
     	return x;
     }
-    int close(int fd) {
+    
+   public int close(int fd) {
+    	//System.out.println("Close is called");
     	int x = 0;
 		//int filedesc = FDFinder();
     	if(fd < 0 || fd >15) {
@@ -469,17 +502,21 @@ public class UserProcess {
     	else
     		ree[fd].close();
     		ree[fd] = null;
-    		numopen--;
+    		
     	return x;
     }
-    int  unlink(int a0) {
+    
+    public int  unlink(int a0) {
+    	//System.out.println("Unlink is called");
+
     	int x = 0;
     	
     	if(a0<0 && a0> Machine.processor().getMemory().length) {
     		return -1;
     	}
-    	int filedesc = FDFinder();
+    //	int filedesc = FDFinder();
     	String file = readVirtualMemoryString(a0, 256);
+
     	ThreadedKernel.fileSystem.remove(file);
     	
     	return x;
@@ -490,14 +527,13 @@ public class UserProcess {
     
     
     int FDFinder() {
-    	int fd = 115;
     	for(int i=0;i<16;i++ ) {		//finds and returns first open file descriptor
     		if(this.ree[i]== null) {
-    			System.out.println("you can have "+i);
+    		//	System.out.println("you can have "+i);
     			return i;
     		}
     	}
-    	return fd;
+    	return -1;
     }
     private static final int
     syscallHalt = 0,
@@ -555,7 +591,7 @@ public class UserProcess {
 		creat(a0);
 		break;
 	case syscallOpen:
-		open(a0);
+		Hopen(a0);
 		break;
 	case syscallRead:
 		read(a0,a1,a2);
@@ -621,9 +657,7 @@ public class UserProcess {
     private int argc, argv;
 	private int curr_TPID;
 	private int rand_TPID;
-	int numopen;
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
-    private HashMap<Integer,OpenFile> reee;
-    private OpenFile ree[];
+    private OpenFile[] ree;
 }
